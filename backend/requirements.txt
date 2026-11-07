@@ -1,0 +1,26 @@
+# ===== Web 框架 =====
+fastapi>=0.115
+uvicorn>=0.32
+watchfiles>=0.24              # uvicorn --reload 文件监听（Windows 可用）
+python-multipart>=0.0.20      # 文件上传解析
+
+# ===== 配置与校验 =====
+pydantic>=2.7
+pydantic-settings>=2.3
+python-dotenv>=1.0
+
+# ===== LangChain 1.x（import 一律从 langchain_xxx 子包导入）=====
+langchain>=1.0
+langchain-core>=1.4
+langchain-openai>=1.5         # ChatOpenAI + OpenAIEmbeddings（兼容 DeepSeek / SiliconFlow）
+langchain-chroma>=1.0         # Chroma 向量库集成
+langchain-text-splitters>=1.0
+
+# ===== 向量数据库 =====
+chromadb>=1.5,<2
+
+# ===== 文档解析 =====
+pypdf==6.21.4                 # 锁定 6.x（7.0 刚发布，避免全新大版本 API 变动）
+
+# ===== 测试脚本用 =====
+requests>=2.32
