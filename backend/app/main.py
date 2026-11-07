@@ -55,9 +55,12 @@ def health() -> dict:
     }
 
 
-# ===== 后续阶段在此注册路由 =====
-# 阶段 2：from app.routers import documents
-#         app.include_router(documents.router, prefix="/api/documents", tags=["documents"])
+# ===== 路由注册 =====
+# 阶段 2：文档上传 / 列表 / 删除
+from app.routers import documents
+
+app.include_router(documents.router, prefix="/api/documents", tags=["documents"])
+
 # 阶段 3：from app.routers import search
 #         app.include_router(search.router, prefix="/api", tags=["search"])
 # 阶段 4：from app.routers import chat, sessions
