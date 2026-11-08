@@ -11,8 +11,11 @@ FastAPI 应用入口。
 """
 import logging
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
+from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
+from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from app.core.config import settings
 
@@ -37,6 +40,45 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+
+# ===== 全局异常处理 =====
+# 未捕获异常统一返回中文 JSON detail，前端据此展示错误提示。
+
+@app.exception_handler(RequestValidationError)
+async def validation_exception_handler(
+    request: Request, exc: RequestValidationError
+) -> JSONResponse:
+    """请求参数校验失败：422 + 首个字段错误信息。"""
+    first = exc.errors()[0] if exc.errors() else {}
+    loc = ".".join(str(x) for x in first.get("loc", []))
+    return JSONResponse(
+        status_code=422,
+        content={"detail": f"请求参数不合法：{loc} {first.get('msg', '')}"},
+    )
+
+
+@app.exception_handler(StarletteHTTPException)
+async def http_exception_handler(
+    request: Request, exc: StarletteHTTPException
+) -> JSONResponse:
+    """HTTP 异常：仅把"路由不存在"的默认 404 中文化；
+    业务抛出的 404（如"会话不存在"）等 detail 原样透传。"""
+    if exc.status_code == 404 and exc.detail == "Not Found":
+        return JSONResponse(status_code=404, content={"detail": "接口不存在"})
+    return JSONResponse(status_code=exc.status_code, content={"detail": exc.detail})
+
+
+@app.exception_handler(Exception)
+async def unhandled_exception_handler(
+    request: Request, exc: Exception
+) -> JSONResponse:
+    """兜底：未捕获异常记录日志并返回 500。
+    SSE 流建立后发生的异常不经过这里，由 chat_service 自行发 error 事件。"""
+    logger.exception("未处理异常: %s %s", request.method, request.url.path)
+    return JSONResponse(
+        status_code=500, content={"detail": f"服务器内部错误：{exc}"}
+    )
 
 
 @app.get("/api/health")

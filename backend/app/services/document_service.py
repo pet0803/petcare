@@ -17,7 +17,7 @@ import threading
 import uuid
 from datetime import datetime
 from pathlib import Path
-from typing import Any
+from typing import Any, Callable
 
 from fastapi import UploadFile
 from langchain_chroma import Chroma
@@ -115,18 +115,31 @@ class DocumentService:
         return settings.data_dir / "documents.json"
 
     def _load_index(self) -> list[dict[str, Any]]:
+        with self._lock:
+            return self._load_index_locked()
+
+    def _load_index_locked(self) -> list[dict[str, Any]]:
+        """不加锁读取索引（调用方需已持有 _lock）。"""
         path = self._index_path()
         if not path.exists():
             return []
-        with self._lock:
-            with open(path, "r", encoding="utf-8") as f:
-                return json.load(f)
+        with open(path, "r", encoding="utf-8") as f:
+            return json.load(f)
 
-    def _save_index(self, entries: list[dict[str, Any]]) -> None:
+    def _update_index(
+        self, mutator: Callable[[list[dict[str, Any]]], list[dict[str, Any]]]
+    ) -> None:
+        """在锁内完成 读-改-写 整个索引更新。
+
+        上传 / 删除如果分开加锁（先读、后写），两个并发请求会各自
+        基于同一份旧数据写入，后写者覆盖先写者（丢条目）。
+        """
         settings.data_dir.mkdir(parents=True, exist_ok=True)
         with self._lock:
+            entries = self._load_index_locked()
+            updated = mutator(entries)
             with open(self._index_path(), "w", encoding="utf-8") as f:
-                json.dump(entries, f, ensure_ascii=False, indent=2)
+                json.dump(updated, f, ensure_ascii=False, indent=2)
 
     # ---------- 上传与入库 ----------
     def upload_and_index(self, file: UploadFile) -> dict[str, Any]:
@@ -183,9 +196,8 @@ class DocumentService:
             "chunk_count": len(chunks),
             "uploaded_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
         }
-        entries = self._load_index()
-        entries.append(entry)
-        self._save_index(entries)
+        # 原子更新索引：与并发请求的读-改-写在同一把锁内串行
+        self._update_index(lambda es: es + [entry])
         return entry
 
     def _parse_pdf(self, path: Path) -> list[dict[str, Any]]:
@@ -268,9 +280,11 @@ class DocumentService:
         target = next((e for e in entries if e["doc_id"] == doc_id), None)
         if target is None:
             return False
+        # 先删向量再更新索引：即使索引写失败，最坏也只是残留一个
+        # 无向量的空条目；反过来（索引先删、向量残留）会让已删除的
+        # 文档继续出现在检索结果里，危害更大
         _get_vector_store().delete(where={"doc_id": doc_id})
-        entries.remove(target)
-        self._save_index(entries)
+        self._update_index(lambda es: [e for e in es if e["doc_id"] != doc_id])
         disk_path = settings.uploads_dir / f"{doc_id}.{target['file_type']}"
         disk_path.unlink(missing_ok=True)
         return True

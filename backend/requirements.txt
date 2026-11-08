@@ -24,3 +24,4 @@ pypdf==6.21.4                 # 锁定 6.x（7.0 刚发布，避免全新大版�
 
 # ===== 测试脚本用 =====
 requests>=2.32
+pytest>=8                     # 可选：单元测试（tests/test_services.py）
