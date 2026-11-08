@@ -58,14 +58,13 @@ def health() -> dict:
 # ===== 路由注册 =====
 # 阶段 2：文档上传 / 列表 / 删除
 # 阶段 3：Top-K 相似度检索
-from app.routers import documents, search
+# 阶段 4：SSE 流式问答 / 会话管理
+from app.routers import chat, documents, search, sessions
 
 app.include_router(documents.router, prefix="/api/documents", tags=["documents"])
 app.include_router(search.router, prefix="/api", tags=["search"])
-
-# 阶段 4：from app.routers import chat, sessions
-#         app.include_router(chat.router, prefix="/api", tags=["chat"])
-#         app.include_router(sessions.router, prefix="/api/sessions", tags=["sessions"])
+app.include_router(chat.router, prefix="/api", tags=["chat"])
+app.include_router(sessions.router, prefix="/api/sessions", tags=["sessions"])
 
 logger.info(
     "PetCare AI 启动配置摘要 | LLM: %s | Embedding: %s | TopK: %d | 阈值: %.2f",

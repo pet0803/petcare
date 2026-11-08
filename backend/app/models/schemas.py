@@ -49,3 +49,34 @@ class SearchResult(BaseModel):
 
 class SearchResponse(BaseModel):
     results: list[SearchResult]
+
+
+class ChatRequest(BaseModel):
+    """流式问答请求。session_id 可选：不传或传未知 id 都会自动创建/重建会话。"""
+
+    session_id: str | None = None
+    question: str = Field(min_length=1, max_length=2000)
+
+
+class ChatMessage(BaseModel):
+    """会话中的一条消息。"""
+
+    role: str                # "user" | "assistant"
+    content: str
+    created_at: str | None = None
+
+
+class SessionInfo(BaseModel):
+    session_id: str
+    created_at: str
+    messages: list[ChatMessage]
+
+
+class SessionCreateResponse(BaseModel):
+    session_id: str
+    created_at: str
+
+
+class SessionDeleteResponse(BaseModel):
+    session_id: str
+    message: str
