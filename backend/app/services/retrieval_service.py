@@ -19,6 +19,7 @@ from app.services.document_service import (
     MissingApiKeyError,
     _get_vector_store,
 )
+from app.utils.text_utils import make_snippet
 
 SNIPPET_MAX_LEN = 200  # 引用来源展示的片段截断长度
 
@@ -57,12 +58,12 @@ class RetrievalService:
     def search(self, query: str, top_k: int | None = None) -> list[dict[str, Any]]:
         """检索并返回 API 友好的结果字典列表。"""
         return [
-            self._to_dict(doc, score)
+            self._to_dict(doc, score, query)
             for doc, score in self.search_with_docs(query, top_k)
         ]
 
     @staticmethod
-    def _to_dict(doc: Document, score: float) -> dict[str, Any]:
+    def _to_dict(doc: Document, score: float, query: str) -> dict[str, Any]:
         meta = doc.metadata
         content = doc.page_content.strip()
         return {
@@ -70,11 +71,8 @@ class RetrievalService:
             "filename": meta.get("filename", ""),
             "page": meta.get("page"),
             "score": round(score, 4),
-            "snippet": (
-                content
-                if len(content) <= SNIPPET_MAX_LEN
-                else content[:SNIPPET_MAX_LEN] + "…"
-            ),
+            # 关键词窗口摘要：展示切片中真正与问题相关的部分
+            "snippet": make_snippet(content, query, SNIPPET_MAX_LEN),
         }
 
 

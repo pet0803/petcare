@@ -24,14 +24,17 @@ class Session:
         self.created_at = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         self.messages: list[dict[str, Any]] = []
 
-    def append(self, role: str, content: str) -> None:
-        self.messages.append(
-            {
-                "role": role,  # "user" | "assistant"
-                "content": content,
-                "created_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-            }
-        )
+    def append(
+        self, role: str, content: str, sources: list[dict[str, Any]] | None = None
+    ) -> None:
+        msg = {
+            "role": role,  # "user" | "assistant"
+            "content": content,
+            "created_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+        }
+        if sources is not None:  # 仅 assistant 消息携带引用来源
+            msg["sources"] = sources
+        self.messages.append(msg)
 
     def history(self) -> list[dict[str, str]]:
         """返回裁剪后的历史（最近 HISTORY_LIMIT 条），供模型使用。"""

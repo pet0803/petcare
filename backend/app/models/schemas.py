@@ -58,12 +58,19 @@ class ChatRequest(BaseModel):
     question: str = Field(min_length=1, max_length=2000)
 
 
+class ChatSource(SearchResult):
+    """回答的引用来源（随会话历史持久化，前端恢复后还原引用卡片）。"""
+
+    index: int  # 对应回答中的 [n] 编号
+
+
 class ChatMessage(BaseModel):
     """会话中的一条消息。"""
 
     role: str                # "user" | "assistant"
     content: str
     created_at: str | None = None
+    sources: list[ChatSource] | None = None  # 仅 assistant 消息携带引用来源
 
 
 class SessionInfo(BaseModel):

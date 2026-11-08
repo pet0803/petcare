@@ -24,6 +24,7 @@ from langchain_openai import ChatOpenAI
 from app.core.config import settings
 from app.prompts.rag_prompt import RAG_SYSTEM_PROMPT, RAG_USER_TEMPLATE, format_context
 from app.services.session_service import Session
+from app.utils.text_utils import make_snippet
 
 # ===== LLM 单例（懒加载，首次问答时初始化）=====
 _llm: ChatOpenAI | None = None
@@ -93,6 +94,21 @@ class ChatService:
         docs = [doc for doc, _ in hits]
         messages = self.build_messages(session, question, docs)
 
+        # 引用来源：index 与参考资料中的 [n] 编号一一对应。
+        # 与生成结果无关，提前算好；写入会话历史时一并持久化，
+        # 前端通过"历史会话"切换回来后仍能还原引用卡片与徽章定位。
+        sources = [
+            {
+                "index": i,
+                "doc_id": doc.metadata.get("doc_id", ""),
+                "filename": doc.metadata.get("filename", ""),
+                "page": doc.metadata.get("page"),
+                "snippet": make_snippet(doc.page_content, question, 200),
+                "score": round(score, 4),
+            }
+            for i, (doc, score) in enumerate(hits, start=1)
+        ]
+
         answer_parts: list[str] = []
         failed = False
         try:
@@ -112,23 +128,11 @@ class ChatService:
             answer = "".join(answer_parts)
             if answer:
                 session.append("user", question)
-                session.append("assistant", answer)
+                session.append("assistant", answer, sources)
 
         if failed:
             return
 
-        # 引用来源：index 与参考资料中的 [n] 编号一一对应
-        sources = [
-            {
-                "index": i,
-                "doc_id": doc.metadata.get("doc_id", ""),
-                "filename": doc.metadata.get("filename", ""),
-                "page": doc.metadata.get("page"),
-                "snippet": doc.page_content.strip()[:200],
-                "score": round(score, 4),
-            }
-            for i, (doc, score) in enumerate(hits, start=1)
-        ]
         yield _sse("sources", {"sources": sources})
         yield _sse("done", {})
 
