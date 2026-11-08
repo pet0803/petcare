@@ -33,7 +33,9 @@ class Settings(BaseSettings):
     # --- RAG 参数 ---
     top_k: int = 4                # 检索返回的片段数
     max_top_k: int = 8            # 检索上限
-    retrieval_threshold: float = 0.3   # 相似度阈值（score = 1 - 余弦距离）
+    retrieval_threshold: float = 0.45  # 相似度阈值（score = 1 - 余弦距离）
+    # 说明：bge-m3 对无关中文文本的相似度基线约 0.3~0.45，
+    # 0.45 能过滤掉大部分噪声；若发现相关问题被误伤可适当调低
     chunk_size: int = 600         # 切片字符数
     chunk_overlap: int = 120      # 相邻切片重叠字符数
 

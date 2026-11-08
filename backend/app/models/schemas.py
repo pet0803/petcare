@@ -3,7 +3,7 @@ Pydantic 请求 / 响应模型。
 
 字段与前端 TS 类型（frontend/src/types.ts）一一对应，保持命名一致。
 """
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 
 class DocumentInfo(BaseModel):
@@ -28,3 +28,24 @@ class UploadResponse(DocumentInfo):
 class DeleteResponse(BaseModel):
     doc_id: str
     message: str
+
+
+class SearchRequest(BaseModel):
+    """检索请求。"""
+
+    query: str = Field(min_length=1, max_length=500)
+    top_k: int | None = Field(default=None, ge=1, le=8)  # 上限与 settings.max_top_k 一致
+
+
+class SearchResult(BaseModel):
+    """检索结果条目。"""
+
+    doc_id: str
+    filename: str
+    page: int | None = None    # TXT 无页码为 null
+    score: float               # 相似度 = 1 - 余弦距离，越高越相关
+    snippet: str               # 片段文本（最多 200 字）
+
+
+class SearchResponse(BaseModel):
+    results: list[SearchResult]

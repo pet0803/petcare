@@ -7,7 +7,10 @@ __pycache__/
 backend/.env
 
 # ===== 运行时数据（上传文件、向量库、文档索引）=====
-backend/data/
+# 注意：data/sample/ 下的预置测试样例属于源码，需要提交
+backend/data/uploads/
+backend/data/chroma/
+backend/data/documents.json
 
 # ===== Node =====
 node_modules/
