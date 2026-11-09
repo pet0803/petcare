@@ -9,12 +9,13 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import {
   createSession,
   deleteDocument,
+  deleteSession,
   getSession,
   listDocuments,
   uploadDocument,
 } from "./api/documents";
 import { streamChat } from "./api/chatStream";
-import DocumentPanel from "./components/DocumentPanel";
+import Sidebar from "./components/Sidebar";
 import ChatWindow from "./components/ChatWindow";
 import type { ChatMessage, DocumentInfo, SessionInfo, SessionMeta } from "./types";
 
@@ -164,10 +165,12 @@ export default function App() {
       setSessionId(sid);
       setMessages([]);
       setToast(null);
+      // 立即出现在左侧历史会话列表顶部（发出第一条消息后自动填充预览）
+      upsertSessionMeta(sid, "");
     } catch (e) {
       showError(e);
     }
-  }, [isStreaming, showError]);
+  }, [isStreaming, showError, upsertSessionMeta]);
 
   // 切换到历史会话：拉取该会话的完整历史并上屏
   const switchSession = useCallback(
@@ -199,6 +202,27 @@ export default function App() {
       }
     },
     [isStreaming, sessionList, upsertSessionMeta, removeSessionMeta, showError]
+  );
+
+  // 删除历史会话：若删除的是当前会话，自动新建一个并切换过去
+  const handleDeleteSession = useCallback(
+    async (id: string) => {
+      if (!window.confirm("删除该会话？此操作不可恢复")) return;
+      try {
+        await deleteSession(id);
+        removeSessionMeta(id);
+        if (id === sessionIdRef.current) {
+          const sid = await createSession();
+          localStorage.setItem(SESSION_KEY, sid);
+          setSessionId(sid);
+          setMessages([]);
+          upsertSessionMeta(sid, "");
+        }
+      } catch (e) {
+        showError(e);
+      }
+    },
+    [removeSessionMeta, upsertSessionMeta, showError]
   );
 
   const handleUpload = useCallback(
@@ -239,16 +263,17 @@ export default function App() {
           {toast}
         </div>
       )}
-      <DocumentPanel documents={documents} onUpload={handleUpload} onDelete={handleDelete} />
-      <ChatWindow
-        messages={messages}
-        isStreaming={isStreaming}
+      <Sidebar
         sessions={sessionList}
         currentSessionId={sessionId}
-        onSend={sendMessage}
+        documents={documents}
         onNewSession={newSession}
         onSwitchSession={switchSession}
+        onDeleteSession={handleDeleteSession}
+        onUpload={handleUpload}
+        onDeleteDocument={handleDelete}
       />
+      <ChatWindow messages={messages} isStreaming={isStreaming} onSend={sendMessage} />
     </div>
   );
 }

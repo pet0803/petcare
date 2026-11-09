@@ -29,6 +29,10 @@ export async function deleteDocument(docId: string): Promise<void> {
   await http.delete(`/documents/${encodeURIComponent(docId)}`);
 }
 
+export async function deleteSession(sessionId: string): Promise<void> {
+  await http.delete(`/sessions/${encodeURIComponent(sessionId)}`);
+}
+
 export async function createSession(): Promise<string> {
   const data = await http.post<{ session_id: string }>("/sessions", {});
   return data.session_id;

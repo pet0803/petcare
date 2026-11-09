@@ -4,7 +4,7 @@ interface Props {
   onUpload: (file: File) => Promise<void>;
 }
 
-/** 文件上传区：点击选择或拖拽上传（仅 PDF / TXT） */
+/** 紧凑上传区（侧边栏底部）：点击选择或拖拽上传（仅 PDF / TXT） */
 export default function UploadZone({ onUpload }: Props) {
   const [busy, setBusy] = useState(false);
   const [dragOver, setDragOver] = useState(false);
@@ -34,10 +34,10 @@ export default function UploadZone({ onUpload }: Props) {
         setDragOver(false);
         handleFile(e.dataTransfer.files?.[0] ?? null);
       }}
-      className={`cursor-pointer rounded-xl border-2 border-dashed px-4 py-5 text-center text-xs transition-colors ${
+      className={`cursor-pointer rounded-lg border-2 border-dashed px-3 py-3 text-center text-xs transition-colors ${
         dragOver
-          ? "border-blue-400 bg-blue-50 text-blue-600"
-          : "border-slate-200 bg-slate-50 text-slate-500 hover:border-blue-300 hover:text-slate-600"
+          ? "border-emerald-400 bg-emerald-50 text-emerald-600"
+          : "border-slate-300 bg-white text-slate-500 hover:border-emerald-300"
       }`}
     >
       <input
@@ -50,10 +50,7 @@ export default function UploadZone({ onUpload }: Props) {
       {busy ? (
         <span className="animate-pulse">⏳ 解析 + 向量化中，请稍候…</span>
       ) : (
-        <>
-          <p className="text-base">📤</p>
-          <p className="mt-1">点击或拖拽上传 PDF / TXT</p>
-        </>
+        <span>📤 点击或拖拽上传 PDF / TXT</span>
       )}
     </div>
   );

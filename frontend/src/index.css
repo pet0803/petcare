@@ -1,1 +1,17 @@
 @import "tailwindcss";
+
+/* 细滚动条（WebKit）：侧边栏与消息区更精致 */
+*::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+*::-webkit-scrollbar-track {
+  background: transparent;
+}
+*::-webkit-scrollbar-thumb {
+  background: rgb(203 213 225);
+  border-radius: 3px;
+}
+*::-webkit-scrollbar-thumb:hover {
+  background: rgb(148 163 184);
+}
